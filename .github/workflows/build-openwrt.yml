@@ -81,6 +81,8 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread build."
+        make tools/install -j$(nproc)
+        make toolchan/install -j$(nproc)
         make -j$(nproc) V=s
 
     - name : Upload artifact
