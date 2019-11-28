@@ -77,10 +77,13 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Cache Tools
+    - name: Cache tools,toolchain,staging_dir
       uses: actions/cache@v1
       with:
-        path: openwrt/tools
+        path: |
+          openwrt/tools
+          openwrt/toolchain
+          openwrt/staging_dir
         key: tools_cache
 #        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
@@ -88,28 +91,6 @@ jobs:
           ${{ runner.OS }}-build-
           ${{ runner.OS }}-
 
-    - name: Cache Toolchain
-      uses: actions/cache@v1
-      with:
-        path: openwrt/toolchan
-        key: tools_cache
-#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-build-
-          ${{ runner.OS }}-          
-
-    - name: Cache staging_dir
-      uses: actions/cache@v1
-      with:
-        path: openwrt/staging_dir
-        key: tools_cache
-#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-build-
-          ${{ runner.OS }}-
-                                                            
     - name: Build tools and toolchain
       if: steps.cache-primes.outputs.cache-hit != 'true'
       run: |
