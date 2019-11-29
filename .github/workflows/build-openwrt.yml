@@ -79,13 +79,11 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Cache tools,toolchain,staging_dir
+    - name: Cache tools
+      id: cache-tools
       uses: actions/cache@v1
       with:
-        path: |
-          openwrt/tools
-          openwrt/toolchain
-          openwrt/staging_dir
+        path: openwrt/tools
         key: tools_cache
 #        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
@@ -93,12 +91,39 @@ jobs:
           ${{ runner.OS }}-build-
           ${{ runner.OS }}-
 
-    - name: Build tools and toolchain
-      if: steps.cache-primes.outputs.cache-hit != 'true'
+    - name: Cache toolchain
+      id: cache-toolchain
+      uses: actions/cache@v1
+      with:
+        path: openwrt/toolchain
+        key: tools_cache
+#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
+
+    - name: Cache staging_dir
+      uses: actions/cache@v1
+      with:
+        path: openwrt/staging_dir
+        key: tools_cache
+#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
+
+    - name: Build tools if not caching
+      if: steps.cache-tools.outputs.cache-hit != 'true'
       run: |
         cd openwrt
-        echo -e "$(nproc) thread build."
         make tools/install -j$(nproc) V=s
+
+    - name: Build toolchain if not caching
+      if: steps.cache-toolchain.outputs.cache-hit != 'true'
+      run: |
+        cd openwrt
         make toolchain/install -j$(nproc) V=s
 
     - name: Build image
