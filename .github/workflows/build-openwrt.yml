@@ -106,11 +106,11 @@ jobs:
         cd openwrt
         make V=s
 
-    - name : Upload artifact (target)
+    - name : Upload artifact (targets)
       uses: actions/upload-artifact@master
       with:
         name: ${GITHUB_REF##*/}_OpenWrt_target
-        path: openwrt/bin/target
+        path: openwrt/bin/targets
 
     - name : Upload artifact (packages)
       uses: actions/upload-artifact@master
