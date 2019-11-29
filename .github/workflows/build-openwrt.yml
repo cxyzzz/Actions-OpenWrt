@@ -12,7 +12,9 @@ on:
     types: [published]
   push:
     branches: 
-      - master
+      - '*'
+      - '*/*'
+      - '!master'
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
@@ -104,8 +106,14 @@ jobs:
         cd openwrt
         make V=s
 
-    - name : Upload artifact
+    - name : Upload artifact (target)
       uses: actions/upload-artifact@master
       with:
-        name: OpenWrt
-        path: openwrt/bin
+        name: ${GITHUB_REF##*/}_OpenWrt_target
+        path: openwrt/bin/target
+
+    - name : Upload artifact (packages)
+      uses: actions/upload-artifact@master
+      with:
+        name: ${GITHUB_REF##*/}_OpenWrt_packages
+        path: openwrt/bin/packages
