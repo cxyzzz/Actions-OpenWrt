@@ -1,8 +1,8 @@
 #=================================================
-#   Description: Build OpenWrt using GitHub Actions
-#   Lisence: MIT
-#   Author: P3TERX
-#   Blog: https://p3terx.com
+# Description: Build OpenWrt using GitHub Actions
+# Lisence: MIT
+# Author: P3TERX
+# Blog: https://p3terx.com
 #=================================================
 
 name: Build OpenWrt
@@ -11,8 +11,10 @@ on:
   release:
     types: [published]
   push:
-    branches: 
-      - master
+    branches:
+      - '*'
+      - '*/*'
+      - '!master'
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
@@ -24,7 +26,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@master
+      uses: actions/checkout@v1
 
     - name: Initialization environment
       env:
@@ -55,18 +57,22 @@ jobs:
         sudo -E apt-get clean
 
     - name: Clone source code
-      run: |
-        git clone https://github.com/coolsnowwolf/lede openwrt
-        cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+      env: 
+        REPO_URL: https://github.com/coolsnowwolf/lede
+        REPO_BRANCH: master
+      run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
-    - name: Load Custom Configuration
+    - name: Update feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: cd openwrt && ./scripts/feeds install -a
+
+    - name: Load custom configuration
       run: |
-        ln -sf packages openwrt/package/diy-packages
-        ln -sf files openwrt/files
+        [ -e files ] && mv files openwrt/files
+        [ -e "${GITHUB_REF:11}.config" ] && cp "${GITHUB_REF:11}.config" openwrt/.config
         chmod +x diy.sh
-        [ -e ".config" ] && cp .config openwrt
         cd openwrt
         ../diy.sh
         make defconfig
@@ -77,14 +83,66 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Build
+    - name: Cache tools
+      id: cache-tools
+      uses: actions/cache@v1
+      with:
+        path: openwrt/tools
+        key: tools_cache
+#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
+
+    - name: Cache toolchain
+      id: cache-toolchain
+      uses: actions/cache@v1
+      with:
+        path: openwrt/toolchain
+        key: tools_cache
+#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
+
+    - name: Cache staging_dir
+      uses: actions/cache@v1
+      with:
+        path: openwrt/staging_dir
+        key: tools_cache
+#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
+
+    - name: Build tools if not caching
+      if: steps.cache-tools.outputs.cache-hit != 'true'
       run: |
         cd openwrt
-        echo -e "$(nproc) thread build."
+        make tools/install -j$(nproc)
+
+    - name: Build toolchain if not caching
+      if: steps.cache-toolchain.outputs.cache-hit != 'true'
+      run: |
+        cd openwrt
+        make toolchain/install -j$(nproc)
+
+    - name: Build image
+      run: |
+        cd openwrt
         make -j$(nproc) V=s
 
-    - name : Upload artifact
+    - name : Upload artifact (targets)
       uses: actions/upload-artifact@master
       with:
-        name: OpenWrt
-        path: openwrt/bin
+        name: "${GITHUB_REF:11}_OpenWrt_targets"
+        path: openwrt/bin/targets
+
+    - name : Upload artifact (packages)
+      uses: actions/upload-artifact@master
+      with:
+        name: "${GITHUB_REF:11}_OpenWrt_packages"
+        path: openwrt/bin/packages
