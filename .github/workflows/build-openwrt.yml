@@ -7,7 +7,9 @@
 
 name: Build OpenWrt
 
-on: 
+on:
+  create:
+    tags: '*'
   release:
     types: [published]
   push:
@@ -138,11 +140,11 @@ jobs:
     - name : Upload artifact (targets)
       uses: actions/upload-artifact@master
       with:
-        name: "${GITHUB_REF:11}_OpenWrt_targets"
+        name: OpenWrt_targets
         path: openwrt/bin/targets
 
     - name : Upload artifact (packages)
       uses: actions/upload-artifact@master
       with:
-        name: "${GITHUB_REF:11}_OpenWrt_packages"
+        name: OpenWrt_packages
         path: openwrt/bin/packages
