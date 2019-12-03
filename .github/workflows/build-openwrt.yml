@@ -17,6 +17,8 @@ on:
       - '*'
       - '*/*'
       - '!master'
+    paths:
+      - '.config'
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
@@ -91,11 +93,6 @@ jobs:
       with:
         path: openwrt/tools
         key: tools_cache
-#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-build-
-          ${{ runner.OS }}-
 
     - name: Cache toolchain
       id: cache-toolchain
@@ -103,22 +100,12 @@ jobs:
       with:
         path: openwrt/toolchain
         key: tools_cache
-#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-build-
-          ${{ runner.OS }}-
 
     - name: Cache staging_dir
       uses: actions/cache@v1
       with:
         path: openwrt/staging_dir
         key: tools_cache
-#        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-build-
-          ${{ runner.OS }}-
 
     - name: Build tools if not caching
       if: steps.cache-tools.outputs.cache-hit != 'true'
